@@ -1,0 +1,30 @@
+tapes: <int>
+states: <int>
+alphabet: <char[]> #blanks are enforced as '_'
+
+<global_state>: <tape reads>\t<next state>: <actions (space delimited)>
+
+#e.g.
+#tapes: 1
+#states: 3
+#alphabet: _01
+#
+#0: 0    1: 1R
+#0: 1    2: 1L
+#0: _    -1: S
+#
+#
+#e.g.
+#tapes: 2
+#states: 8
+#alphabet: _01
+#
+#0: _ _      1: S R
+#1: 0 1      1: S0R
+#1: 1 1      1: S1R
+#1: _ _      2: R L
+#...
+#6: 0 0      7: 0R 0R
+#6: 0 1      7: 0R 1R
+#6: 1 0      7: 1R 0R
+#6: 1 1      7: 1R 1R
