@@ -1,3 +1,6 @@
+RESET = "\033[0m"
+RED = "\033[31m"
+
 class Tape:
     def __init__(self, content: str, blank: str = "_") -> None:
         self.blank = blank
@@ -29,3 +32,21 @@ class Tape:
         min_i = min(self.cells.keys())
         max_i = max(self.cells.keys())
         return "".join(self.cells.get(i, self.blank) for i in range(min_i, max_i + 1))
+
+    def render_with_head(self, blank:str='_') ->str:
+
+        if not self.cells:
+            display_char = " "
+            highlighted = f"{RED}{display_char}{RESET}"
+            return highlighted
+        min_i = min(self.cells.keys())
+        max_i = max(self.cells.keys())
+        chars=[]
+        for i in range(min_i, max_i+1):
+            sym=self.cells.get(i, blank)
+            display_char = " " if sym==blank else sym
+            if i == self.head:
+                chars.append(f"{RED}{display_char}{RESET}")
+            else:
+                chars.append(display_char)
+        return "".join(chars)
