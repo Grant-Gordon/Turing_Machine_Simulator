@@ -8,8 +8,8 @@ class TuringTable:
         self.states = parsed_vals["states"]
         self.alphabet = parsed_vals["alphabet"]
         self.transitions=parsed_vals["transitions"]
-        self.reject = -2
-        self.accept = -1
+        self.reject_state = -2
+        self.accept_state = -1
 
     @staticmethod
     def _validate_table(parsed_vals):

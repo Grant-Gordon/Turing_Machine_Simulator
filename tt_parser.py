@@ -44,40 +44,48 @@ def _read_nonempty_noncomment_lines(tt_path:str) ->List[str]:
     return result
 
 
-def _parse_header(lines:List[str])-> Dict[str, Any]:
+def _parse_header(lines: List[str]) -> Dict[str, Any]:
     tapes = None
     states = None
     alphabet_str = None
-    
-    remaining_lines = []
 
     header_expected_keys = {"tapes", "states", "alphabet"}
-    
-    header_done=False
-    for line in lines:
+
+    idx = 0
+    n = len(lines)
+
+    # Consume header lines while the key is a known header key
+    while idx < n:
+        line = lines[idx]
+
+        # No ':' at all → definitely not a header line
         if ":" not in line:
-            header_done=True
-        
-        if not header_done:
-            key, value = _split_key_value(line)
-            key_lower = key.lower()
-            if key_lower not in header_expected_keys:
-                raise ValueError(f"Unknown header key '{key}' in line: {line}")
-            if key_lower == "tapes":
-                tapes = _parse_int(value, "tapes")
-                if tapes<=0:
-                    raise ValueError("tapes must be a positive integer")
-            elif key_lower == "states":
-                states = _parse_int(value, "states")
-                if states <= 0:
-                    raise ValueError("states must be a positive integer.")
-            elif key_lower == "alphabet":
-                alphabet_str= value.strip()
-                if not alphabet_str:
-                    raise ValueError("alphabet must not be empty.")
-                #TODO: no blank guard
-        else:
-            remaining_lines.append(line)
+            raise ValueError(f"Unexpected syntax. TuringTable format did not include char ':' in line: '{line}'")
+
+        key, value = _split_key_value(line)
+        key_lower = key.lower()
+
+        if key_lower not in header_expected_keys:
+            # First non-header key → transitions start here
+            break
+
+        if key_lower == "tapes":
+            tapes = _parse_int(value, "tapes")
+            if tapes <= 0:
+                raise ValueError("tapes must be a positive integer.")
+        elif key_lower == "states":
+            states = _parse_int(value, "states")
+            if states <= 0:
+                raise ValueError("states must be a positive integer.")
+        elif key_lower == "alphabet":
+            alphabet_str = value.strip()
+            if not alphabet_str:
+                raise ValueError("alphabet must not be empty.")
+        idx += 1
+
+    # Everything from idx onward are transition lines
+    remaining_lines = lines[idx:]
+
     if tapes is None:
         raise ValueError("Missing 'tapes:' header.")
     if states is None:
@@ -86,13 +94,14 @@ def _parse_header(lines:List[str])-> Dict[str, Any]:
         raise ValueError("Missing 'alphabet:' header.")
 
     alphabet_tuple: Tuple[str, ...] = tuple(alphabet_str)
-    
+
     return {
         "tapes": tapes,
         "states": states,
         "alphabet": alphabet_tuple,
         "remaining_lines": remaining_lines,
     }
+
 
 def _parse_int(text:str, field_name:str)->int:
     try:
@@ -102,7 +111,7 @@ def _parse_int(text:str, field_name:str)->int:
     
 def _split_key_value(line: str) -> Tuple[str, str]:
 
-    key, value = line.splie(":",1)
+    key, value = line.split(":",1)
     key_clean = key.strip()
     value_clean = value.strip()
 
@@ -120,38 +129,36 @@ def _parse_transition_lines(line:str, tapes:int, alphabet:Tuple[str,...]):
 
     second_colon_index = rest.find(":")
     if second_colon_index == -1:
-        raise ValueError(
-            f"Transition line must contain two ':' separators: {line}"
-        )
+        raise ValueError(f"Transition line must contain two ':' separators: {line}")
     
     reads_part = rest[:second_colon_index].strip()
     right_part = rest[second_colon_index + 1 :].strip()
 
-    read_symbols_tokens = reads_part.split()
-    if len(read_symbols_tokens) != tapes:
-        raise ValueError(
-            f"Expected {tapes} read symbols in transition, got {len(read_symbols_tokens)} "
-            f"in line: {line}"
-        )
+    tokens = reads_part.split()
+    expected_tokens=tapes+1
+    
+    if len(tokens) != expected_tokens:
+        raise ValueError(f"Expected {expected_tokens} tokens(reads+next_state) before second ':', got {len(tokens)} in line: {line} ")
+    
+    read_symbols_tokens= tokens[:tapes]
+    next_state_token = tokens[tapes]
     read_tuple: Tuple[str, ...] = tuple(
         _parse_read_symbol(token, alphabet, line) for token in read_symbols_tokens
     )
+
+    next_state = _parse_int(next_state_token, "next_state")
 
     # right_part is "<next_state> <actions...>" but still has a colon removed;
     # we split once on whitespace to get next_state, then the remaining actions.
     if not right_part:
         raise ValueError(f"Missing next_state and actions in line: {line}")
-    tokens = right_part.split()
-    if len(tokens) < 1 + tapes:
-        raise ValueError(
-            f"Expected at least {1 + tapes} tokens (next_state + {tapes} actions), "
-            f"got {len(tokens)} in line: {line}"
-        )
-    next_state = _parse_int(tokens[0], "next_state")
-    action_tokens = tokens[1:]
+    action_tokens = right_part.split()
+    if len(action_tokens) != tapes:
+        raise ValueError(f"Expected {tapes} action tokens, got {len(action_tokens)} in line: {line}")
 
     if len(action_tokens) != tapes:
         raise ValueError(f"Expected {tapes} action tokens, got {len(action_tokens)} in line: {line}")
+    
     actions = [_parse_action_token(action_token, alphabet, line) for action_token in action_tokens]
 
     return current_state, read_tuple, next_state, tuple(actions)
