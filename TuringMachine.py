@@ -117,9 +117,9 @@ class TuringMachine:
                 steps += 1
 
             final_tapes = tuple(t.render() for t in self.tapes)
-            print(f"Final state: {self.global_state}")
-            print(f"Final tapes: {final_tapes}")
-            print(f"Steps taken: {steps}")
+            print(f"{GREEN}Final state: {self.global_state}{RESET}")
+            print(f"{GREEN}Final tapes: {final_tapes}{RESET}")
+            print(f"{GREEN}Steps taken: {steps}{RESET}")
             print()
         
     def _print_step_trace(self, step_index, state, read_tuple):
