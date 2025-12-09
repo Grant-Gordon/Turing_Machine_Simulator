@@ -1,0 +1,26 @@
+tapes: 2
+states: 3
+alphabet: _01
+#accept: -1
+#reject: -2
+
+#Step 0 populate t2 backwards 
+0: 0 _          0: R 0L
+0: 1 _          0: R 1L
+0: _ _          1: L R
+
+#STEP 1: Rewind t2
+1: 1 0      1: L S
+1: 1 1      1: L S
+1: 0 1      1: L S
+1: 0 0      1: L S
+1: _ 0      2: R S
+1: _ 1      2: R S
+
+
+#STEP 2: set T1=t2
+2: _ _     -1: L L #ENd reached 
+2: 0 0      2: R _R 
+2: 0 1      2: 1R _R
+2: 1 0      2: 0R _R
+2: 1 1      2: R _R

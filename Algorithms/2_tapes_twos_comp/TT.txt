@@ -1,0 +1,24 @@
+tapes: 2
+states: 2
+alphabet: _01
+#accept: -1
+#reject: -2
+
+#STEP 0: flip all bits
+0: 0 _      0: 1R S
+0: 1 _      0: 0R S
+0: _ _      1: L S
+
+#Step 1: Cache Carry and add
+#if no carry established
+1: 0 _     -1: 1S S     #No carry and 0 return +1
+1: 1 _      1: 0L 1S    # if its a 1; 1+1=0+c 
+
+#carry established
+1: 1 0      1: 1L 0S    
+1: _ 0     -1: S S      #if no carry and empty return 
+1: 0 0     -1: S S      # Same as above
+1: 1 1      1: 0L 1S    #1+1 = 0+c 
+1: _ 1     -1: 1S 0S    #Don't add one, just add carry?
+1: 0 1      1: 1L 0S    # 0 +1 = 1 no c
+

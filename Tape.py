@@ -26,12 +26,14 @@ class Tape:
         else:
             raise ValueError(f"Invalid direction {direction!r}")
 
-    def render(self) -> str:
+    def render(self, blank='_') -> str:
         if not self.cells:
             return ""
         min_i = min(self.cells.keys())
         max_i = max(self.cells.keys())
-        return "".join(self.cells.get(i, self.blank) for i in range(min_i, max_i + 1))
+        raw= "".join(self.cells.get(i, self.blank) for i in range(min_i, max_i + 1))
+        clean = raw.replace(blank, "")
+        return clean
 
     def render_with_head(self, blank:str='_') ->str:
 

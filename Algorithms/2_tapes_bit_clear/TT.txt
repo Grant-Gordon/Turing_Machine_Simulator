@@ -1,0 +1,92 @@
+# 2-tape bit_clear
+# Input format on tape 1 (tape 2 is blank):
+#   value_bits '_' mask_bits
+# Example: 11111111_00110
+
+tapes: 2
+states: 8
+alphabet: _01e
+
+
+
+############################################################
+# STATE 0: q_init
+#     Move one cell left on tape1, then in state 1
+#     we will mark that cell with 'e' as a left sentinel.
+############################################################
+
+0: 0 _    1: 0L _S
+0: 1 _    1: 1L _S
+
+
+############################################################
+# STATE 1: q_mark_left
+#     Write 'e' there and move right back onto the first value bit.
+############################################################
+1: _ _    2: eR _S
+
+
+############################################################
+# STATE 2: q_scan_delim
+#   We scan right until we find the '_' delimiter between value and mask.
+############################################################
+2: 0 _    2: 0R _S #move right while not blank
+2: 1 _    2: 1R _S
+
+2: _ _    3: _R _S # once delimiter reached. 
+
+
+############################################################
+# STATE 3: q_copy_mask
+#     Copy mask bits from tape1 onto tape2, left-to-right.
+############################################################
+
+3: 0 _    3: _R 0R #copy values onto tape 2 while clearing tape 1 mask bits (end with tape1 = val tape2=mask)
+3: 1 _    3: _R 1R
+
+3: _ _    4: _L _L # reached end of input move back to last bit of tapes
+
+
+############################################################
+# STATE 4: q_align_right
+#     Move left on tape1 until we reach non blank (e.g. end of val)
+############################################################
+4: _ _    4: L S #while tape1 is blank, move left 
+4: _ 0    4: L S
+4: _ 1    4: L S
+#reached end of input
+4: 1 _    5: S S
+4: 1 0    5: S S
+4: 1 1    5: S S
+4: 0 _    5: S S
+4: 0 0    5: S S
+4: 0 1    5: S S
+
+############################################################
+# STATE 5: q_
+# Clear bits on mask until reach e
+############################################################
+
+5: _ 0    -2: S S # if reach _ on tape1 error
+5: _ 1    -2: S S
+5: _ _    -2: S S
+5: e _    -1: _R S # successful condition, remove e and return 
+
+#middle bits
+5: 0 1     5: L L
+5: 0 0     5: L L
+5: 1 1     5: 0L L 
+5: 1 0     5: L  L
+
+#shortend mask
+5: 0 _     6: S S
+5: 1 _     6: S S
+
+############################################################
+# STATE 5: q_
+# clean up e on shortened mask 
+############################################################
+6: 0 _    6: L S
+6: 1 _    6: L S
+6: _ _   -2: S S
+6: e _   -1: _R S

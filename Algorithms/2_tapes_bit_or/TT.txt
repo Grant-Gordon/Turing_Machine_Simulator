@@ -1,0 +1,40 @@
+# 2-tape bit_or
+tapes: 2
+states: 4
+alphabet: _01
+
+
+
+############################################################
+# STATE 0: right move until delimiter
+############################################################
+
+#standard bits keep going
+0: 0 _    0: R S
+0: 1 _    0: R S
+0: _ _    1: R S
+
+
+#STEP 1: copy val 2 onto t2
+1: 0 _      1: R 0R
+1: 1 _      1: R 1R
+1: _ _      2: L S #End reached/val_2 copied
+
+
+#STEP2: Clean Tape 1
+2: 0 _      2: _L S
+2: 1 _      2: _L S
+2: _ _      3: L L      #reach delimiter. both heads now at end val1 and end val_2
+
+#STEP3: OR 
+3: 0 0      3: 0L L 
+3: 1 0      3: 1L L 
+3: 0 1      3: 1L L 
+3: 1 1      3: 1L L 
+3: _ _     -1: S S #both vals are equal length 
+# val 2 is longer than val 1
+3: _ 0      3: S 0L
+3: _ 1      3: S 1L
+#val 1 is longer than tape 2
+3: 0 _      3: 0L S
+3: 1 _      3: 1L S

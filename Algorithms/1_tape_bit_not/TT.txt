@@ -1,0 +1,9 @@
+tapes: 1
+states: 1
+alphabet: _01
+#accept: -1
+#reject: -2
+
+0: 0    0: 1R
+0: 1    0: 0R
+0: _    -1: S

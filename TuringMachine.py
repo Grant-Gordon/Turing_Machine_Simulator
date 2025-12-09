@@ -19,14 +19,19 @@ class TuringMachine:
         self.tapes=[]
 
     def _parse_input_line(self, line: str) -> Tuple[str, ...]:
-        line= line.strip()
+        # Strip off inline comments
+        line = line.split("#", 1)[0].strip()
+
         if not line:
-              raise ValueError("Empty input line.")
+            return None
         if self.tt.tapes == 1:
             return (line,)
-        parts = [p.strip() for p in line.split("\n")]
-        if len(parts) != self.tt.tapes:
-            raise ValueError(f"Expected {self.tt.tapes} tape segments separated by '|', got {len(parts)}: {line!r}")
+        #Multi-tape initialization splits on '|'
+        parts = [p.strip() for p in line.split("|")]
+        if len(parts) > self.tt.tapes:
+            raise ValueError(f"Expected at most {self.tt.tapes} tape segments separated by '|', got {len(parts)}: {line!r}")
+        while len(parts) < self.tt.tapes:
+            parts.append("") #start other tapes with blank
         return tuple(parts)
 
         
@@ -85,12 +90,18 @@ class TuringMachine:
     
     def run(self, inputs:str, inputs_as_path:bool=True)->None:
         if inputs_as_path:
+            raw_lines=[]
             with open(inputs, "r", encoding="utf-8") as f:
-                raw_lines = f.readlines()
+               raw_lines=[raw_line for raw_line in f]
         else:
-            raw_lines = inputs.split("\n")
-
-        test_cases = [ln.strip() for ln in raw_lines if ln.strip()]
+            raw_lines = [raw_line for raw_line in inputs.split("\n")]
+        
+        test_cases=[]
+        for raw_line in raw_lines:
+            stripped= raw_line.split("#", 1)[0].strip()
+            if not stripped:
+                continue
+            test_cases.append(stripped)
 
         for idx, line in enumerate(test_cases, start=1):
             print(f"=== Input {idx}: {line!r} ===")
@@ -113,26 +124,45 @@ class TuringMachine:
         
     def _print_step_trace(self, step_index, state, read_tuple):
         blank = '_'
+
+        # ---------- Print the TM state line once ----------
+        if state == self.tt.accept_state:
+            state_str = f"{GREEN}{state}{RESET}"
+        elif state == self.tt.reject_state:
+            state_str = f"{RED}{state}{RESET}"
+        else:
+            state_str = f"{state}"
+
+        display_syms = []
+        for sym in read_tuple:
+            display_char = " " if sym == blank else sym
+            display_syms.append(f"{BOLD}'{display_char}'{RESET}")
+
+        state_tuple_str = ", ".join([str(state_str)] + display_syms)
+        print(f"Turing machine state: ( {state_tuple_str} )")
+
+        # ---------- Collect tape lines first ----------
+        tape_infos: list[tuple[str, str, str]] = []
+
         for tape_idx, tape in enumerate(self.tapes):
-            head_pos_display = tape.head +1
+            head_pos_display = tape.head + 1  # 1-based
+            word_display = tape.render_with_head(blank=blank)  # keeps your red head
 
-            word_display = tape.render_with_head(blank=blank)
+            plain_prefix = f"tape {tape_idx}: I:{head_pos_display} S:{step_index}"
+            colored_prefix = (
+                f"{CYAN}tape {tape_idx}{RESET}: "
+                f"{YELLOW}I:{head_pos_display} S:{step_index}{RESET}"
+            )
 
-            print(f"{CYAN}tape {tape_idx}{RESET}: {YELLOW}I:{head_pos_display} S:{step_index}{RESET} Word: {word_display}")
-            
-                # Color the state depending on accept/reject/normal
-            if state == self.tt.accept_state:
-                state_str = f"{GREEN}{state}{RESET}"
-            elif state == self.tt.reject_state:
-                state_str = f"{RED}{state}{RESET}"
-            else:
-                state_str = f"{state}"
+            tape_infos.append((plain_prefix, colored_prefix, word_display))
 
-            display_syms = []
-            for sym in read_tuple:
-                display_char= " " if sym ==blank else sym
-                display_syms.append(f"{BOLD}'{display_char}'{RESET}")
-            
-            state_tuple_str = ", ".join([str(state_str)] + display_syms)
-            print(f"Turing machine state: ( {state_tuple_str} )")
-            print()
+        # ---------- Compute alignment width ----------
+        max_prefix_len = max(len(info[0]) for info in tape_infos) if tape_infos else 0
+
+        # ---------- Print each tape line with aligned "Word:" ----------
+        for plain_prefix, colored_prefix, word_display in tape_infos:
+            pad_len = max_prefix_len - len(plain_prefix)
+            pad = " " * pad_len
+            print(f"{colored_prefix}{pad} Word: {word_display}")
+
+        print()  # blank line between steps
